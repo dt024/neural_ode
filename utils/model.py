@@ -127,7 +127,7 @@ class ODENet(Model):
         return running_loss,acc
 
 class Network(Model):
-    def __init__(self, input_dim=1):
+    def __init__(self, input_dim=3):
         super(Network, self).__init__()
         self.fe = nn.Sequential(*[
             nn.Conv2d(input_dim,64,3,1),

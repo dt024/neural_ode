@@ -19,7 +19,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-d", "--device", type=str, default="cpu", help="Device which the PyTorch run on")
 parser.add_argument("-bs", "--batch-size", type=int, default=1024, help="Batch size of 1 iteration")
 parser.add_argument("-ep", "--epochs", type=int, default=200, help="Numbers of epoch")
-parser.add_argument("-f", "--folder", type=str, default="./data/mnist", help="Folder /path/to/mnist/dataset")
+parser.add_argument("-f", "--folder", type=str, default="./data/svhn", help="Folder /path/to/mnist/dataset")
 parser.add_argument("-r", "--result", type=str, default="./result", help="Folder where the result going in")
 parser.add_argument("-tr", "--train", type=int, default=8000, help="Number of train images")
 parser.add_argument("-vl", "--valid", type=int, default=2000, help="Number of validation images")
@@ -137,7 +137,7 @@ def main(ds_len, train_ds, valid_ds,model_type = "ode",data_name = "mnist_50",ba
     loss_fn = torch.nn.functional.binary_cross_entropy_with_logits
     if parallel:
         if model_type == "ode": 
-            ode_func = ODEBlock(parallel=parallel)
+            ode_func = ODEBlock(parallel=parallel,input_dim=3)
             ode_func = nn.DataParallel(ode_func).to(device)
             model = ODENet(ode_func, parallel, device=device)
             model = nn.DataParallel(model).to(device)
@@ -145,19 +145,19 @@ def main(ds_len, train_ds, valid_ds,model_type = "ode",data_name = "mnist_50",ba
 #    ode_model = DDP(ODENet(ode_func,device=device).to(device),output_device=device)
         elif model_type == "cnn":
 #            epochs= int(epochs * 1.5)
-            model = Network()
+            model = Network(3)
             model = nn.DataParallel(model).to(device)
     else:
         if model_type == "ode": 
             ode_func = ODEBlock().to(device)
             ode_func = nn.DataParallel(ode_func).to(device)
-            model = ODENet(ode_func.module, device=device)
+            model = ODENet(ode_func.module,input_dim=3 , device=device)
             model = nn.DataParallel(model).to(device)
 #    ode_func = DDP(ODEBlock().to(device), output_device=device)
 #    ode_model = DDP(ODENet(ode_func,device=device).to(device),output_device=device)
         elif model_type == "cnn":
             #epochs= int(epochs * 1.5)
-            model = Network().to(device)
+            model = Network(input_dim=3).to(device)
             #model = nn.DataParallel(model).to(device)
         
 
@@ -180,17 +180,17 @@ def main(ds_len, train_ds, valid_ds,model_type = "ode",data_name = "mnist_50",ba
     torch.save(model.state_dict(), f"{MODEL_DIR}/{model_type}_origin/{data_name}_origin.pt" ) 
     return model
 
-MNIST = torchvision.datasets.MNIST(DATA_DIR,
-                                   train=True,
+SVHN = torchvision.datasets.SVHN(DATA_DIR,
+#                                   train=True,
                                    transform=None,
                                    target_transform=None, download=True)
 
-ds_len_, ds_ = preprocess_data(MNIST, sigma=None, device=device)
-ds_len_, pertubed_ds_ = preprocess_data(MNIST, sigma=[25.0,30.0,40.0], device=device, train=True)
+ds_len_, ds_ = preprocess_data(SVHN, sigma=None, device=device)
+ds_len_, pertubed_ds_ = preprocess_data(SVHN, sigma=[25.0,30.0,40.0], device=device, train=True)
 print(type(ds_))
     
 sigma = [None, 1e-7, 50.0, 75.0, 100.0]
-loaders = [(key,DataLoader(preprocess_data(MNIST, sigma=key, device=device, train=False)[1], batch_size=12000)) for key in sigma]
+loaders = [(key,DataLoader(preprocess_data(SVHN, sigma=key, device=device, train=False)[1], batch_size=12000)) for key in sigma]
 evaluation = {
     "ode": {
         
@@ -203,16 +203,16 @@ for k in sigma:
     evaluation["ode"].update({k: []})
     evaluation["cnn"].update({k: []})
 for i in range(5):
-    cnn_model = main(ds_len_,ds_, pertubed_ds_, device=device, model_type="cnn", data_name=f"mnist_origin",batch_size=BATCH_SIZE, epochs=EPOCHS, train_num=TRAIN_NUM, valid_num=VALID_NUM, test_num=TEST_NUM, result_dir=RESULT_DIR, parallel=PARALLEL,weight_decay=WEIGHT_DECAY) 
-    ode_model = main(ds_len_,ds_, pertubed_ds_, device=device, model_type="ode", data_name=f"mnist_origin",batch_size=BATCH_SIZE, epochs=EPOCHS, train_num=TRAIN_NUM, valid_num=VALID_NUM, test_num=TEST_NUM, result_dir=RESULT_DIR, parallel=PARALLEL,weight_decay=WEIGHT_DECAY) 
+    cnn_model = main(ds_len_,ds_, pertubed_ds_, device=device, model_type="cnn", data_name=f"svhn_origin",batch_size=BATCH_SIZE, epochs=EPOCHS, train_num=TRAIN_NUM, valid_num=VALID_NUM, test_num=TEST_NUM, result_dir=RESULT_DIR, parallel=PARALLEL,weight_decay=WEIGHT_DECAY) 
+    ode_model = main(ds_len_,ds_, pertubed_ds_, device=device, model_type="ode", data_name=f"svhn_origin",batch_size=BATCH_SIZE, epochs=EPOCHS, train_num=TRAIN_NUM, valid_num=VALID_NUM, test_num=TEST_NUM, result_dir=RESULT_DIR, parallel=PARALLEL,weight_decay=WEIGHT_DECAY) 
     for k,l in loaders:
         if isinstance(cnn_model, nn.DataParallel): cnn_model = cnn_model.module
         if isinstance(ode_model, nn.DataParallel): ode_model = ode_model.module
         _, cnn_acc = cnn_model.evaluate(l) 
         _, ode_acc = ode_model.evaluate(l) 
         
-        print(f"CNNs for {k}-gaussian-pertubed MNIST = {cnn_acc}")
-        print(f"ODEs for {k}-gaussian-pertubed MNIST = {ode_acc}")
+        print(f"CNNs for {k}-gaussian-pertubed SVHN = {cnn_acc}")
+        print(f"ODEs for {k}-gaussian-pertubed SVHN = {ode_acc}")
         
 
         evaluation["ode"][k].append(ode_acc)
