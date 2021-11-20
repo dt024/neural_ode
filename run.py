@@ -89,8 +89,7 @@ def train_model(model, optimizer, train_loader, val_loader,loss_fn, lr_scheduler
             running_loss += loss.item() 
             #print("End batch number: {batch_id + 1} in epoch number {epoch_id + 1}")
         #acc = round(correct/total * 1.0, 5)
-        if lr_scheduler:
-            lr_scheduler.step()
+
         acc = correct / total
 
         #print("Accuracy was calculated")
@@ -104,6 +103,8 @@ def train_model(model, optimizer, train_loader, val_loader,loss_fn, lr_scheduler
             best_acc = acc
             best_epoch = epoch_id + 1
             best_model = model
+        if lr_scheduler:
+            lr_scheduler.step(val_loss)
         history["val_loss"].append(val_loss)
         history["val_acc"].append(val_acc)
         running_loss /= len(loads)
@@ -202,8 +203,8 @@ for k in sigma:
     evaluation["ode"].update({k: []})
     evaluation["cnn"].update({k: []})
 for i in range(5):
-    cnn_model = main(ds_len_,ds_, pertubed_ds_, device=device, model_type="cnn", data_name=f"mnist_origin",batch_size=BATCH_SIZE, epochs=EPOCHS, train_num=TRAIN_NUM, valid_num=VALID_NUM, test_num=TEST_NUM, result_dir=RESULT_DIR, parallel=PARALLEL) 
-    ode_model = main(ds_len_,ds_, pertubed_ds_, device=device, model_type="ode", data_name=f"mnist_origin",batch_size=BATCH_SIZE, epochs=EPOCHS, train_num=TRAIN_NUM, valid_num=VALID_NUM, test_num=TEST_NUM, result_dir=RESULT_DIR, parallel=PARALLEL) 
+    cnn_model = main(ds_len_,ds_, pertubed_ds_, device=device, model_type="cnn", data_name=f"mnist_origin",batch_size=BATCH_SIZE, epochs=EPOCHS, train_num=TRAIN_NUM, valid_num=VALID_NUM, test_num=TEST_NUM, result_dir=RESULT_DIR, parallel=PARALLEL,weight_decay=WEIGHT_DECAY) 
+    ode_model = main(ds_len_,ds_, pertubed_ds_, device=device, model_type="ode", data_name=f"mnist_origin",batch_size=BATCH_SIZE, epochs=EPOCHS, train_num=TRAIN_NUM, valid_num=VALID_NUM, test_num=TEST_NUM, result_dir=RESULT_DIR, parallel=PARALLEL,weight_decay=WEIGHT_DECAY) 
     for k,l in loaders:
         if isinstance(cnn_model, nn.DataParallel): cnn_model = cnn_model.module
         if isinstance(ode_model, nn.DataParallel): ode_model = ode_model.module
