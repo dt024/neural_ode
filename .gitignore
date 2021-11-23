@@ -6,6 +6,7 @@ data/
 data/*
 model/
 model/*
+checkpoints/*
 # C extensions
 *.so
 */__pycache__/*
