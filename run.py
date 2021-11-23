@@ -56,7 +56,7 @@ def train_model(model, optimizer, train_loader, val_loader,loss_fn, lr_scheduler
         total = 0
         correct = 0
         running_loss = 0
-        print(f"Start epoch number: {epoch_id + 1}")
+        print(f"\nStart epoch number: {epoch_id + 1}")
 #        print(next(enumerate(train_loader,0)))
         loads = list(enumerate(train_loader,0))
         for batch_id, data in loads:
@@ -137,7 +137,7 @@ def main(ds_len, train_ds, valid_ds,model_type = "ode",data_name = "mnist_50",ba
     loss_fn = torch.nn.functional.binary_cross_entropy_with_logits
     if parallel:
         if model_type == "ode": 
-            ode_func = ODEBlock(parallel=parallel,input_dim=3)
+            ode_func = ODEBlock(parallel=parallel)
             ode_func = nn.DataParallel(ode_func).to(device)
             model = ODENet(ode_func, parallel, device=device)
             model = nn.DataParallel(model).to(device)
@@ -186,7 +186,7 @@ SVHN = torchvision.datasets.SVHN(DATA_DIR,
                                    target_transform=None, download=True)
 
 ds_len_, ds_ = preprocess_data(SVHN, sigma=None, device=device)
-ds_len_, pertubed_ds_ = preprocess_data(SVHN, sigma=[25.0,30.0,40.0], device=device, train=True)
+ds_len_, pertubed_ds_ = preprocess_data(SVHN, sigma=[3.0,4.5,6.0], device=device, train=True)
 print(type(ds_))
     
 sigma = [None, 1e-7, 50.0, 75.0, 100.0]
@@ -202,7 +202,7 @@ evaluation = {
 for k in sigma:
     evaluation["ode"].update({k: []})
     evaluation["cnn"].update({k: []})
-for i in range(5):
+for i in range(1):
     cnn_model = main(ds_len_,ds_, pertubed_ds_, device=device, model_type="cnn", data_name=f"svhn_origin",batch_size=BATCH_SIZE, epochs=EPOCHS, train_num=TRAIN_NUM, valid_num=VALID_NUM, test_num=TEST_NUM, result_dir=RESULT_DIR, parallel=PARALLEL,weight_decay=WEIGHT_DECAY) 
     ode_model = main(ds_len_,ds_, pertubed_ds_, device=device, model_type="ode", data_name=f"svhn_origin",batch_size=BATCH_SIZE, epochs=EPOCHS, train_num=TRAIN_NUM, valid_num=VALID_NUM, test_num=TEST_NUM, result_dir=RESULT_DIR, parallel=PARALLEL,weight_decay=WEIGHT_DECAY) 
     for k,l in loaders:

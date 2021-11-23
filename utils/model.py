@@ -76,7 +76,7 @@ class ODEBlock(nn.Module):
         return out
      
 class ODENet(Model):
-    def __init__(self, func, parallel=False, input_dim=1, device="cpu"):
+    def __init__(self, func, parallel=False, input_dim=3, device="cpu"):
         super(ODENet, self).__init__()
         assert isinstance(func, ODEBlock) or isinstance(func.module,ODEBlock), f"argument function is not NeuralODEs model"
         self.fe = nn.Sequential(*[nn.Conv2d(input_dim,64,3,1),
